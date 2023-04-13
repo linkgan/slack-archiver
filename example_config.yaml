@@ -1,0 +1,7 @@
+
+channels_to_archive:
+  - my_channel
+  - my_channel_2
+
+GSHEET_NAME: my_gsheet_name
+bot_token: my_slack_bot_token
