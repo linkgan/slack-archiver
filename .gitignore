@@ -1,7 +1,6 @@
-creds.py
-config.py
 config.yaml
 output/
 .vscode/*
 __pycache__/*
 .ipynb_checkpoints/
+archive.ipynb

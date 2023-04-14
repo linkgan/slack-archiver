@@ -21,15 +21,15 @@ class Archive:
 
     """
 
-    def __init__(self, token):
+    def __init__(self, configs):
         logger.info("Initializing Archive object")
-        configs = load_config()
         self.now = time.localtime()
         self.date = time.strftime("%Y-%m-%d", self.now)
         self.channels_to_archive = configs["channels_to_archive"]
         self.bot_token = configs["bot_token"]
         self.client = WebClient(token=self.bot_token)
         self.gspread = Spread(configs["GSHEET_NAME"])
+        self.configs = configs
 
     def get_channels(self):
         self.channel_dict = {}
@@ -129,26 +129,35 @@ class Archive:
 
     def gsheets_io(self, channel: str):
         logger.info("Saving conversation history to gsheet for [{}]".format(channel))
-        updated_date = time.strftime("%Y-%m-%d", self.now)
         sheet_name = channel + "_new"
 
         self.gspread.df_to_sheet(
-            self.df, index=False, sheet=sheet_name, start="A3", replace=True
+            self.df, index=False, sheet=sheet_name, start=self.configs['gsheet']['cell_start'], replace=True
         )
-        self.gspread.update_cells("A1", "B1", ["Last updated on:", updated_date])
+        self.gspread.update_cells("A1", "B1", ["Last updated on:", self.date])
 
-    def merge_channel(self, archive, channel: str):
-        old_df = self.gspread.sheet_to_df(archive, channel)
-        return None
+    def merge_channel(self, channel: str)->None:
+        logger.info("Merging old and new data: [{}]".format(channel))
+        old_df = self.gspread.sheet_to_df(sheet=channel, start_row=3, index=None)
+        #Check if old_df is empty
+        if len(old_df) > 0:
+            old_df = old_df[old_df['ts']<=self.min_ts]
+        
+        new_df = pd.concat([old_df, self.df])
+        self.gspread.df_to_sheet(
+            new_df, index=False, sheet=channel, start="A3", replace=True
+        )
+        self.gspread.update_cells("A1", "B1", ["Last merged on:", self.date])
+        
 
     def full_run(self):
         """Run the full flow of Archiver"""
 
         self.get_channels()
-
-        # for channel in self.channels_to_archive:
-        #   self.get_conversation_history(self.channel_dict[channel], channel)
-        #   self.gsheets_io(channel)
+        for channel in self.channels_to_archive:
+          self.get_conversation_history(self.channel_dict[channel], channel)
+          self.gsheets_io(channel)
+          self.merge_channel(channel)
 
 
 def load_config(filename: str = "config.yaml") -> dict:
@@ -170,7 +179,8 @@ def load_config(filename: str = "config.yaml") -> dict:
 
 
 def main():
-    a = Archive(token=creds.bot_token)
+    configs = load_config()
+    a = Archive(configs)
     a.full_run()
 
 
