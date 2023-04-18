@@ -1,5 +1,6 @@
 import yaml
 from gspread_pandas import Spread
+import gspread_pandas.conf
 import time
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -28,7 +29,9 @@ class Archive:
         self.channels_to_archive = configs["channels_to_archive"]
         self.bot_token = configs["bot_token"]
         self.client = WebClient(token=self.bot_token)
-        self.gspread = Spread(configs["GSHEET_NAME"])
+        # gspread_creds = gspread_pandas.conf.get_config(conf_dir='creds/')
+        # gspread_creds = gspread_pandas.conf.get_creds(creds_dir='.')
+        self.gspread = Spread(configs["GSHEET_NAME"], config=configs['gspread_secret'])
         self.configs = configs
 
     def get_channels(self):
@@ -51,7 +54,8 @@ class Archive:
             print("Error fetching user information: {}".format(e))
 
     def _to_file(self, messages, channel, type) -> None:
-        dir = f"./output/{self.date}"
+        output_folder = self.configs['output_folder']
+        dir = f"{output_folder}/{self.date}"
         if not os.path.exists(dir):
             os.makedirs(dir)
             logger.info("Directory created successfully")

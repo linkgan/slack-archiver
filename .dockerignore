@@ -1,4 +1,3 @@
-config.yaml
 .vscode/
 *output*/
 __pycache__/*
@@ -6,5 +5,8 @@ __pycache__/*
 archive.ipynb
 .venv/*
 @eaDir/*
+example_config.yaml
+**/.git
+.gitignore
 creds/
 google_secret.json
